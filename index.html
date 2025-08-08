@@ -1,0 +1,510 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery Store Receipt Generator – Create & Customize Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Courier+Prime&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .receipt {
+            font-family: 'Courier Prime', monospace;
+        }
+        .receipt-paper {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                0 10px 20px rgba(0,0,0,0.07);
+            transform: rotateX(5deg) rotateY(-4deg) rotateZ(1deg);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .receipt-container {
+            perspective: 1800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 2rem; /* Default padding */
+        }
+        .receipt-paper:hover {
+            transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #receiptPreview, #receiptPreview * {
+                visibility: visible;
+            }
+            #receiptPreview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+            .receipt-paper {
+                transform: none !important;
+                box-shadow: none !important;
+                border: 1px dashed #d1d5db !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-4 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl lg:text-4xl font-bold text-gray-800">Grocery Store Receipt Generator</h1>
+            <p class="text-gray-600 mt-2">Create and customize professional-looking grocery receipts online.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <div class="bg-white p-6 rounded-lg shadow-lg no-print">
+                <h2 class="text-2xl font-semibold mb-6 border-b pb-4">Receipt Details</h2>
+                
+                <!-- Store Details -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Store Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="storeName" class="block text-sm font-medium text-gray-600">Store Name</label>
+                            <input type="text" id="storeName" value="Shwapno Grocery Store" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                        <div>
+                            <label for="storeAddress" class="block text-sm font-medium text-gray-600">Address</label>
+                            <input type="text" id="storeAddress" value="Bishwanath, Sylhet, Bangladesh" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="storePhone" class="block text-sm font-medium text-gray-600">Phone</label>
+                            <input type="text" id="storePhone" value="+8801777-520103" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date & Time -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Date, Time & Receipt No.</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="dateInput" class="block text-sm font-medium text-gray-600">Date</label>
+                            <input type="date" id="dateInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                        <div>
+                            <label for="timeInput" class="block text-sm font-medium text-gray-600">Time</label>
+                            <input type="time" id="timeInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="receiptNoInput" class="block text-sm font-medium text-gray-600">Receipt No</label>
+                            <input type="text" id="receiptNoInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Items</h3>
+                    <div id="items-container" class="space-y-4">
+                        <!-- Item rows will be injected here by JS -->
+                    </div>
+                    <div class="mt-4 flex space-x-4">
+                        <button id="addItemBtn" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            Add Item
+                        </button>
+                        <button id="addRandomItemBtn" class="text-sm font-medium text-green-600 hover:text-green-800 flex items-center">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" clip-rule="evenodd" />
+                           </svg>
+                            Add Random Item
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Financial Details -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Financials</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="currencySelect" class="block text-sm font-medium text-gray-600">Currency</label>
+                            <select id="currencySelect" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                <option value="BDT" selected>BDT (৳)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="INR">INR (₹)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="AED">AED (د.إ)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="taxRate" class="block text-sm font-medium text-gray-600">Tax Rate (%)</label>
+                            <input type="number" id="taxRate" value="8.5" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                        <div>
+                           <label for="discount" class="block text-sm font-medium text-gray-600">Discount</label>
+                           <input type="number" id="discount" value="0" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Footer Message -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Footer</h3>
+                    <input type="text" id="footerMessage" value="Thank you for shopping with us!" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+            </div>
+
+            <!-- Receipt Preview Section -->
+            <div>
+                <div class="receipt-container">
+                    <div id="receiptPreview" class="receipt bg-white p-6 rounded-lg receipt-paper">
+                        <div class="text-center">
+                            <h2 id="receiptStoreName" class="text-xl font-bold uppercase">Shwapno Grocery Store</h2>
+                            <p id="receiptStoreAddress" class="text-sm">Bishwanath, Sylhet, Bangladesh</p>
+                            <p id="receiptStorePhone" class="text-sm">+8801777-520103</p>
+                        </div>
+                        <div class="my-4 border-t border-b border-dashed border-gray-400 py-2 text-sm">
+                            <div class="flex justify-between">
+                                <span>Receipt No:</span>
+                                <span id="receiptNumber"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Date:</span>
+                                <span id="receiptDate"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Time:</span>
+                                <span id="receiptTime"></span>
+                            </div>
+                        </div>
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr>
+                                    <th class="text-left font-semibold">ITEM</th>
+                                    <th class="text-center font-semibold">QTY</th>
+                                    <th class="text-right font-semibold">PRICE</th>
+                                    <th class="text-right font-semibold">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receiptItems">
+                                <!-- Receipt items will be injected here -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="py-1"><div class="border-t border-dashed border-gray-400"></div></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-right">Subtotal</td>
+                                    <td id="receiptSubtotal" class="text-right">$0.00</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-right">Tax (<span id="receiptTaxRate">8.5</span>%)</td>
+                                    <td id="receiptTax" class="text-right">$0.00</td>
+                                </tr>
+                                 <tr>
+                                    <td colspan="3" class="text-right">Discount</td>
+                                    <td id="receiptDiscount" class="text-right">-$0.00</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="py-1"><div class="border-t border-dashed border-gray-400"></div></td>
+                                </tr>
+                                <tr class="font-bold text-base">
+                                    <td colspan="3" class="text-right">TOTAL</td>
+                                    <td id="receiptTotal" class="text-right">$0.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div class="text-center mt-6">
+                            <p id="receiptFooterMessage" class="mt-2 text-sm">Thank you for shopping with us!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center space-x-4 no-print">
+                    <button id="printBtn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Print Receipt</button>
+                    <button id="downloadBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Download as Image</button>
+                    <button id="resetBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- DOM Elements ---
+            const storeNameInput = document.getElementById('storeName');
+            const storeAddressInput = document.getElementById('storeAddress');
+            const storePhoneInput = document.getElementById('storePhone');
+            const dateInput = document.getElementById('dateInput');
+            const timeInput = document.getElementById('timeInput');
+            const receiptNoInput = document.getElementById('receiptNoInput');
+            const itemsContainer = document.getElementById('items-container');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const addRandomItemBtn = document.getElementById('addRandomItemBtn');
+            const currencySelect = document.getElementById('currencySelect');
+            const taxRateInput = document.getElementById('taxRate');
+            const discountInput = document.getElementById('discount');
+            const footerMessageInput = document.getElementById('footerMessage');
+            const printBtn = document.getElementById('printBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const resetBtn = document.getElementById('resetBtn');
+
+            // --- Receipt Preview Elements ---
+            const receiptStoreName = document.getElementById('receiptStoreName');
+            const receiptStoreAddress = document.getElementById('receiptStoreAddress');
+            const receiptStorePhone = document.getElementById('receiptStorePhone');
+            const receiptNumber = document.getElementById('receiptNumber');
+            const receiptDate = document.getElementById('receiptDate');
+            const receiptTime = document.getElementById('receiptTime');
+            const receiptItems = document.getElementById('receiptItems');
+            const receiptSubtotal = document.getElementById('receiptSubtotal');
+            const receiptTaxRate = document.getElementById('receiptTaxRate');
+            const receiptTax = document.getElementById('receiptTax');
+            const receiptDiscount = document.getElementById('receiptDiscount');
+            const receiptTotal = document.getElementById('receiptTotal');
+            const receiptFooterMessage = document.getElementById('receiptFooterMessage');
+
+            let itemId = 0;
+            
+            const currencySymbols = {
+                BDT: '৳',
+                USD: '$',
+                INR: '₹',
+                EUR: '€',
+                AED: 'د.إ'
+            };
+
+            const groceryItems = [
+                { name: 'Apple', price: 0.60 }, { name: 'Banana', price: 0.30 },
+                { name: 'Milk (1L)', price: 1.50 }, { name: 'Bread Loaf', price: 2.75 },
+                { name: 'Eggs (Dozen)', price: 3.20 }, { name: 'Chicken Breast (1kg)', price: 9.50 },
+                { name: 'Carrots (1kg)', price: 1.80 }, { name: 'Tomatoes (1kg)', price: 2.50 },
+                { name: 'Basmati Rice (1kg)', price: 2.10 }, { name: 'Spaghetti (500g)', price: 1.40 },
+                { name: 'Cheddar Cheese (200g)', price: 4.50 }, { name: 'Onions (1kg)', price: 1.10 },
+                { name: 'Potatoes (1kg)', price: 1.30 }, { name: 'Orange Juice (1L)', price: 2.80 },
+                { name: 'Greek Yogurt (500g)', price: 2.00 }, { name: 'Corn Flakes', price: 3.80 },
+                { name: 'Ground Beef (500g)', price: 6.00 }, { name: 'Iceberg Lettuce', price: 1.25 },
+                { name: 'Red Bell Pepper', price: 0.90 }, { name: 'Cucumber', price: 0.75 },
+                { name: 'Dish Soap', price: 3.10 }, { name: 'Paper Towels (Roll)', price: 1.70 },
+                { name: 'Toothpaste', price: 2.20 }, { name: 'Olive Oil (500ml)', price: 7.50 },
+                { name: 'Avocado', price: 1.80 }, { name: 'Salmon Fillet (200g)', price: 5.00 }
+            ];
+
+            // --- Functions ---
+            
+            /**
+             * Adds a new item row to the form.
+             * @param {object} [item] - Optional item object with name and price to pre-fill the row.
+             */
+            function addItemRow(item) {
+                itemId++;
+                const itemRow = document.createElement('div');
+                itemRow.classList.add('grid', 'grid-cols-12', 'gap-2', 'items-center');
+                itemRow.setAttribute('data-id', itemId);
+
+                const itemName = item ? item.name : '';
+                const itemPrice = item ? item.price.toFixed(2) : '1.00';
+
+                itemRow.innerHTML = `
+                    <input type="text" placeholder="Item Name" value="${itemName}" class="col-span-4 form-input w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" data-field="name">
+                    <input type="number" value="1" min="0" step="any" placeholder="Qty" class="col-span-2 form-input w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" data-field="qty">
+                    <select class="col-span-2 form-select w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" data-field="unit">
+                        <option>pcs</option>
+                        <option>kg</option>
+                        <option>g</option>
+                    </select>
+                    <input type="number" value="${itemPrice}" step="0.01" min="0" placeholder="Price" class="col-span-2 form-input w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" data-field="price">
+                    <button class="col-span-2 removeItemBtn text-red-500 hover:text-red-700 font-bold py-2 px-2 rounded">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+                itemsContainer.appendChild(itemRow);
+                updateReceipt();
+            }
+
+            /**
+             * Updates the entire receipt preview based on form inputs.
+             */
+            function updateReceipt() {
+                // Get selected currency symbol
+                const selectedCurrency = currencySelect.value;
+                const currencySymbol = currencySymbols[selectedCurrency] || '$';
+
+                // Update store info
+                receiptStoreName.textContent = storeNameInput.value || 'Shwapno Grocery Store';
+                receiptStoreAddress.textContent = storeAddressInput.value || 'Bishwanath, Sylhet, Bangladesh';
+                receiptStorePhone.textContent = storePhoneInput.value || '+8801313520200';
+                receiptFooterMessage.textContent = footerMessageInput.value || 'Thank you for shopping with us!';
+                
+                // Update receipt number
+                receiptNumber.textContent = receiptNoInput.value || '';
+
+                // Update date and time from inputs
+                if (dateInput.value) {
+                    const dateObj = new Date(dateInput.value + 'T00:00:00');
+                    receiptDate.textContent = dateObj.toLocaleDateString();
+                } else {
+                    receiptDate.textContent = '';
+                }
+
+                if (timeInput.value) {
+                    const [hours, minutes] = timeInput.value.split(':');
+                    const d = new Date();
+                    d.setHours(hours);
+                    d.setMinutes(minutes);
+                    receiptTime.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    receiptTime.textContent = '';
+                }
+
+
+                // Update items and calculate subtotal
+                receiptItems.innerHTML = '';
+                let subtotal = 0;
+                
+                const itemRows = itemsContainer.querySelectorAll('[data-id]');
+                itemRows.forEach(row => {
+                    const nameInput = row.querySelector('[data-field="name"]');
+                    const qtyInput = row.querySelector('[data-field="qty"]');
+                    const unitInput = row.querySelector('[data-field="unit"]');
+                    const priceInput = row.querySelector('[data-field="price"]');
+
+                    const name = nameInput.value || 'Item';
+                    const qty = parseFloat(qtyInput.value) || 0;
+                    const unit = unitInput.value;
+                    const price = parseFloat(priceInput.value) || 0;
+                    const total = qty * price;
+                    subtotal += total;
+
+                    const receiptRow = document.createElement('tr');
+                    receiptRow.innerHTML = `
+                        <td class="text-left py-1">${name}</td>
+                        <td class="text-center py-1">${qty} ${unit}</td>
+                        <td class="text-right py-1">${currencySymbol}${price.toFixed(2)}</td>
+                        <td class="text-right py-1">${currencySymbol}${total.toFixed(2)}</td>
+                    `;
+                    receiptItems.appendChild(receiptRow);
+                });
+
+                // Update financial details
+                const taxRate = parseFloat(taxRateInput.value) || 0;
+                const discount = parseFloat(discountInput.value) || 0;
+                const taxAmount = (subtotal * taxRate) / 100;
+                const finalTotal = subtotal + taxAmount - discount;
+
+                receiptSubtotal.textContent = `${currencySymbol}${subtotal.toFixed(2)}`;
+                receiptTaxRate.textContent = taxRate.toFixed(1);
+                receiptTax.textContent = `${currencySymbol}${taxAmount.toFixed(2)}`;
+                receiptDiscount.textContent = `-${currencySymbol}${discount.toFixed(2)}`;
+                receiptTotal.textContent = `${currencySymbol}${finalTotal.toFixed(2)}`;
+            }
+            
+            /**
+             * Sets the date/time inputs and a random receipt number.
+             */
+            function initializeDateTime() {
+                const now = new Date();
+                
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                dateInput.value = `${year}-${month}-${day}`;
+
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                timeInput.value = `${hours}:${minutes}`;
+                
+                receiptNoInput.value = Math.floor(100000 + Math.random() * 900000);
+            }
+
+            /**
+             * Resets all fields to their default state.
+             */
+            function resetAll() {
+                if (confirm('Are you sure you want to reset all fields?')) {
+                    storeNameInput.value = 'Shwapno Grocery Store';
+                    storeAddressInput.value = 'Bishwanath, Sylhet, Bangladesh';
+                    storePhoneInput.value = '+8801313520200';
+                    currencySelect.value = 'BDT';
+                    taxRateInput.value = '8.5';
+                    discountInput.value = '0';
+                    footerMessageInput.value = 'Thank you for shopping with us!';
+                    itemsContainer.innerHTML = '';
+                    initializeDateTime();
+                    addItemRow();
+                    addItemRow();
+                    updateReceipt();
+                }
+            }
+
+            // --- Event Listeners ---
+            document.body.addEventListener('input', updateReceipt);
+
+            addItemBtn.addEventListener('click', () => addItemRow());
+
+            addRandomItemBtn.addEventListener('click', () => {
+                const randomItem = groceryItems[Math.floor(Math.random() * groceryItems.length)];
+                addItemRow(randomItem);
+            });
+
+            itemsContainer.addEventListener('click', function (e) {
+                if (e.target.closest('.removeItemBtn')) {
+                    e.target.closest('[data-id]').remove();
+                    updateReceipt();
+                }
+            });
+            
+            printBtn.addEventListener('click', () => window.print());
+
+            downloadBtn.addEventListener('click', () => {
+                const receiptElement = document.getElementById('receiptPreview');
+
+                html2canvas(receiptElement, {
+                    scale: 2,
+                    backgroundColor: '#E5E7EB', // A light gray, like a table
+                    useCORS: true,
+                    onclone: (clonedDoc) => {
+                        const clonedReceipt = clonedDoc.getElementById('receiptPreview');
+                        if (clonedReceipt) {
+                            // Flatten the receipt for the "photo"
+                            clonedReceipt.style.transform = 'none';
+                            // Ensure the shadow is consistent with a flat object
+                            clonedReceipt.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
+                            // Add margin to create space around the receipt in the final image
+                            clonedReceipt.style.margin = '3rem';
+                        }
+                    }
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `receipt-photo-${receiptNoInput.value}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            });
+
+            resetBtn.addEventListener('click', resetAll);
+
+            // --- Initial Setup ---
+            initializeDateTime();
+            addItemRow();
+            addItemRow();
+            updateReceipt();
+        });
+    </script>
+</body>
+</html>
